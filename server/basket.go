@@ -7,10 +7,11 @@ import (
 type Basket struct {
 	UUID *uuid.UUID
 	Items []Item
+	State State
 }
 
 func NewBasket() *Basket {
-	uuid := uuid.Must(uuid.NewV4())
+	uuid := uuid.NewV4()
 	return &Basket{
 		UUID: &uuid,
 	}
