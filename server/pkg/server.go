@@ -1,14 +1,17 @@
 package server
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"sync"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 type Server struct {
 	workers map[string]*Worker
-	mux     *http.ServeMux
+	router  *chi.Mux
 }
 
 var getTotalChanPool = sync.Pool{
@@ -24,22 +27,30 @@ var errorChanPool = sync.Pool{
 }
 
 func NewServer() *Server {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 	s := &Server{
-		mux: mux,
+		workers: make(map[string]*Worker),
+		router:  router,
 	}
 
-	mux.HandleFunc("/add_item", AddItemEndpoint(s))
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+
+	router.Route("/baskets", func(r chi.Router) {
+		r.Post("/", CreateBasket(s))
+		r.Post("/{id}/items", AddItemEndpoint(s))
+	})
 
 	return s
 }
 
 func (s *Server) Start() {
-	http.ListenAndServe(":3000", s.mux)
+	http.ListenAndServe(":3000", s.router)
 }
 
-func (s *Server) getWorker(r *http.Request) (*Worker, error) {
-	id := r.Header.Get("X-Basket-ID")
+func (s *Server) getWorker(id string) (*Worker, error) {
 	worker, ok := s.workers[id]
 	if !ok {
 		return nil, &BasketNotFoundError{}
@@ -60,8 +71,8 @@ func handleError(err error, w http.ResponseWriter) bool {
 		w.WriteHeader(400)
 	}
 
-	message := fmt.Sprintf(`{"error": "%s"}`, err.Error())
-	w.Write([]byte(message))
+	bs, _ := json.Marshal(map[string]interface{}{"error": err.Error()})
+	w.Write(bs)
 
 	return true
 }

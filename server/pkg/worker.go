@@ -30,7 +30,7 @@ func (w *Worker) Start() {
 }
 
 func (w *Worker) GetId() string {
-	return string(w.Basket.UUID.Bytes())
+	return w.Basket.UUID.String()
 }
 
 func (w *Worker) Run() {
