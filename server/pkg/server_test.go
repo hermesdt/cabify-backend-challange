@@ -1,12 +1,12 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,14 +37,14 @@ func TestAddItemNoBasket(t *testing.T) {
 	_, testServer := setup()
 	defer teardown(testServer)
 
-	resp := addItemToBasket(t, testServer, "100")
+	resp := addItemToBasket(t, testServer, "100", "VOUCHER")
 	bs := readBody(t, resp)
 
 	r := map[string]interface{}{}
 	json.Unmarshal(bs, &r)
 
-	assert.Equal(t, 404, resp.StatusCode)
-	assert.Equal(t, r["error"], "basket not found")
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	assert.Equal(t, "basket not found", r["error"])
 }
 
 func TestAddItemHavingBasket(t *testing.T) {
@@ -52,24 +52,42 @@ func TestAddItemHavingBasket(t *testing.T) {
 	defer teardown(testServer)
 
 	r := createBasket(t, testServer)
-	resp := addItemToBasket(t, testServer, r["id"].(string))
-
-	bs := readBody(t, resp)
-	fmt.Println(string(bs))
+	addItemToBasket(t, testServer, r["id"].(string), "VOUCHER")
+	addItemToBasket(t, testServer, r["id"].(string), "TSHIRT")
+	addItemToBasket(t, testServer, r["id"].(string), "MUG")
+	resp := addItemToBasket(t, testServer, r["id"].(string), "MUG")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	message := map[string]interface{}{}
-	if err := json.Unmarshal(bs, &message); err != nil {
+	if err := json.Unmarshal(readBody(t, resp), &message); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 5.0, message["total"].(float64))
+	assert.Equal(t, 40.0, message["total"].(float64))
 }
 
-func createBasket(t *testing.T, testServer *httptest.Server) map[string]interface{} {
-	resp, err := testServer.Client().Post(testServer.URL+"/baskets", "application/json", bytes.NewReader([]byte{}))
+func TestCloseBasket(t *testing.T) {
+	server, testServer := setup()
+	defer teardown(testServer)
+
+	jsonBasket := createBasket(t, testServer)
+	id := jsonBasket["id"].(string)
+	_, err := server.getWorker(id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, resp.StatusCode, 201)
+
+	closeBasket(t, testServer, id)
+	worker, err := server.getWorker(id)
+	assert.Nil(t, worker)
+	assert.IsType(t, &BasketNotFoundError{}, err)
+}
+
+func createBasket(t *testing.T, testServer *httptest.Server) map[string]interface{} {
+	resp, err := testServer.Client().Post(testServer.URL+"/baskets", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	bs := readBody(t, resp)
 
@@ -81,19 +99,40 @@ func createBasket(t *testing.T, testServer *httptest.Server) map[string]interfac
 	return r
 }
 
-func addItemToBasket(t *testing.T, testServer *httptest.Server, basketID string) *http.Response {
-	resp, err := testServer.Client().Post(
-		testServer.URL+"/baskets/"+basketID+"/items",
-		"application/json",
-		bytes.NewBufferString(`{"code": "VOUCHER"}`),
-	)
+func closeBasket(t *testing.T, testServer *httptest.Server, basketID string) {
+	req, err := http.NewRequest("PUT", testServer.URL+"/baskets/"+basketID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	resp, err := testServer.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func addItemToBasket(t *testing.T, testServer *httptest.Server, basketID, code string) *http.Response {
+	req, err := http.NewRequest("PUT",
+		testServer.URL+"/baskets/"+basketID+"/items",
+		strings.NewReader(fmt.Sprintf(`{"code": "%s"}`, code)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("content-type", "application/json")
+
+	resp, err := testServer.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return resp
 }
 
 func readBody(t *testing.T, resp *http.Response) []byte {
+	defer resp.Body.Close()
+
 	bs, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)

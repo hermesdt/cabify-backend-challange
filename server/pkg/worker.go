@@ -20,6 +20,7 @@ func NewWorker() *Worker {
 	worker := &Worker{
 		Basket:  NewBasket(),
 		AddItem: make(chan AddItemAction),
+		Close:   make(chan CloseAction),
 	}
 
 	return worker
@@ -41,7 +42,7 @@ func (w *Worker) Run() {
 			item, ok := Items[code]
 			if !ok {
 				addItemAction.ErrorChan <- &UnkownItemError{}
-				return
+				continue
 			}
 
 			w.Basket.AddItem(item)

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -40,7 +41,12 @@ func NewServer() *Server {
 
 	router.Route("/baskets", func(r chi.Router) {
 		r.Post("/", CreateBasket(s))
-		r.Post("/{id}/items", AddItemEndpoint(s))
+		r.Route("/{id}", func(r chi.Router) {
+			r.Use(workerCtx(s))
+
+			r.Put("/", CloseBasketEndpoint(s))
+			r.Put("/items", AddItemEndpoint(s))
+		})
 	})
 
 	return s
@@ -48,6 +54,21 @@ func NewServer() *Server {
 
 func (s *Server) Start() {
 	http.ListenAndServe(":3000", s.router)
+}
+
+func workerCtx(s *Server) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			worker, err := s.getWorker(id)
+			if handleError(err, w) {
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "worker", worker)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func (s *Server) getWorker(id string) (*Worker, error) {
@@ -66,9 +87,9 @@ func handleError(err error, w http.ResponseWriter) bool {
 
 	switch err.(type) {
 	case *BasketNotFoundError:
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	default:
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	bs, _ := json.Marshal(map[string]interface{}{"error": err.Error()})

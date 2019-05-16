@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/go-chi/chi"
 )
 
 func CreateBasket(s *Server) func(http.ResponseWriter, *http.Request) {
@@ -14,63 +12,73 @@ func CreateBasket(s *Server) func(http.ResponseWriter, *http.Request) {
 		s.workers[worker.GetId()] = worker
 		worker.Start()
 
-		bs, err := json.Marshal(map[string]interface{}{"id": worker.GetId()})
-		if handleError(err, w) {
-			return
-		}
-		w.WriteHeader(201)
-		w.Write(bs)
+		writeJson(w, map[string]interface{}{"id": worker.GetId()}, http.StatusCreated)
 	}
-}
-
-type CodePayload struct {
-	Code
 }
 
 func AddItemEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		basketID := chi.URLParam(r, "id")
-		worker, err := s.getWorker(basketID)
-		if handleError(err, w) {
-			return
-		}
+		worker := r.Context().Value("worker").(*Worker)
 
 		bs, err := ioutil.ReadAll(r.Body)
 		if handleError(err, w) {
 			return
 		}
 
-		codePayload := CodePayload{}
+		codePayload := map[string]interface{}{}
 		err = json.Unmarshal(bs, &codePayload)
 		if handleError(err, w) {
 			return
 		}
-
-		if codePayload.Code == "" {
+		var code string
+		var ok bool
+		if code, ok = codePayload["code"].(string); !ok || code == "" {
 			handleError(&MissingItemCodeError{}, w)
 			return
 		}
-		code := Code(codePayload.Code)
+
 		getTotalChan := getTotalChanPool.Get().(chan Total)
 		errorChan := errorChanPool.Get().(chan error)
 
 		worker.AddItem <- AddItemAction{
-			Code:         code,
+			Code:         Code(code),
 			GetTotalChan: getTotalChan,
 			ErrorChan:    errorChan,
 		}
 
 		select {
 		case total := <-getTotalChan:
-			bs, err := json.Marshal(map[string]interface{}{"total": total})
-			if handleError(err, w) {
-				return
-			}
-
-			w.Write(bs)
-			w.WriteHeader(200)
+			writeJson(w, map[string]interface{}{"total": total}, http.StatusOK)
 		case err := <-errorChan:
 			handleError(err, w)
 		}
 	}
+}
+
+func CloseBasketEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		worker := r.Context().Value("worker").(*Worker)
+
+		getTotalChan := getTotalChanPool.Get().(chan Total)
+
+		worker.Close <- CloseAction{
+			GetTotalChan: getTotalChan,
+		}
+		total := <-getTotalChan
+		delete(s.workers, worker.GetId())
+
+		writeJson(w, map[string]interface{}{"total": total}, http.StatusOK)
+	}
+}
+
+func writeJson(w http.ResponseWriter, data map[string]interface{}, status int) {
+	w.WriteHeader(status)
+	w.Header().Add("content-type", "application/json")
+
+	bs, err := json.Marshal(data)
+	if handleError(err, w) {
+		return
+	}
+
+	w.Write(bs)
 }
