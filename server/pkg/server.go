@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -40,6 +41,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) Start() {
+	log.Println("Starting server on port 3000")
 	http.ListenAndServe(":3000", s.router)
 }
 
@@ -71,6 +73,8 @@ func handleError(err error, w http.ResponseWriter) bool {
 	if err == nil {
 		return false
 	}
+
+	log.Printf("Handling error %+v", err)
 
 	switch err.(type) {
 	case *BasketNotFoundError:
