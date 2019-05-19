@@ -1,0 +1,1 @@
+Bundler.require(:default, ENV["RUBY_ENV"] || "development")
