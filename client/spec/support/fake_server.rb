@@ -1,12 +1,26 @@
 require 'webrick'
 
+RSpec.configure do |config|
+  config.before(:suite) do
+    FakeServer.start!
+  end
+end
+
+module WEBrick
+  module HTTPServlet
+    class ProcHandler
+      alias do_PUT do_POST
+    end
+  end
+end
+
 module FakeServer
   def start!
     if Thread.current[:fake_server]
       return
     end
 
-    server = WEBrick::HTTPServer.new Port: 11334
+    server = WEBrick::HTTPServer.new Port: 11334, BindAddress: '0.0.0.0'
     server_thread = Thread.new { server.start }
 
     Thread.current[:fake_server] = server
@@ -14,7 +28,13 @@ module FakeServer
   end
   module_function :start!
 
-  def setup_endpoint path: nil, status: nil, body: nil, headers: []
+  def url
+    config = Thread.current[:fake_server].config
+    "http://#{config[:BindAddress]}:#{config[:Port]}"
+  end
+  module_function :url
+
+  def stub_endpoint path: nil, status: nil, body: nil, headers: []
     raise ArgumentError.new("path can't be nil") if path.nil?
     raise ArgumentError.new("status can't be nil") if status.nil?
     raise ArgumentError.new("body can't be nil") if body.nil?
@@ -32,11 +52,5 @@ module FakeServer
 
     server
   end
-  module_function :setup_endpoint
-end
-
-RSpec.configure do |config|
-  config.before(:suite) do
-    FakeServer.start!
-  end
+  module_function :stub_endpoint
 end

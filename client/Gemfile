@@ -10,6 +10,6 @@ group :test do
     gem 'guard-rspec', require: false
 end
 
-group :develompent, :test do
+group :development, :test do
     gem 'byebug'
 end
