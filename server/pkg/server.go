@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -13,18 +12,6 @@ import (
 type Server struct {
 	workers map[string]*Worker
 	router  *chi.Mux
-}
-
-var getTotalChanPool = sync.Pool{
-	New: func() interface{} {
-		return make(chan Total)
-	},
-}
-
-var errorChanPool = sync.Pool{
-	New: func() interface{} {
-		return make(chan error)
-	},
 }
 
 func NewServer() *Server {

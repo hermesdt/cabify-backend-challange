@@ -37,8 +37,8 @@ func AddItemEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		getTotalChan := getTotalChanPool.Get().(chan Total)
-		errorChan := errorChanPool.Get().(chan error)
+		getTotalChan := make(chan Total)
+		errorChan := make(chan error)
 
 		worker.AddItem <- AddItemAction{
 			Code:         Code(code),
@@ -59,7 +59,7 @@ func CloseBasketEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		worker := r.Context().Value("worker").(*Worker)
 
-		getTotalChan := getTotalChanPool.Get().(chan Total)
+		getTotalChan := make(chan Total)
 
 		worker.Close <- CloseAction{
 			GetTotalChan: getTotalChan,
