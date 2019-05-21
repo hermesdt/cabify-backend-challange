@@ -14,7 +14,7 @@ const (
 	MUG          = Code("MUG")
 )
 
-var Items = map[Code]Item{
+var DefaultItems = map[Code]Item{
 	VOUCHER_CODE: Item{
 		Code:  VOUCHER_CODE,
 		Name:  "Cabify Voucher",
@@ -32,4 +32,12 @@ var Items = map[Code]Item{
 		Name:  "Cabify Coffee Mug",
 		Price: 750,
 	},
+}
+
+func (i *Item) asJson() map[string]interface{} {
+	return map[string]interface{}{
+		"code":  i.Code,
+		"name":  i.Name,
+		"price": float64(i.Price) / 100,
+	}
 }

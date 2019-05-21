@@ -82,6 +82,41 @@ func TestCloseBasket(t *testing.T) {
 	assert.IsType(t, &BasketNotFoundError{}, err)
 }
 
+func TestGetItems(t *testing.T) {
+	server, testServer := setup()
+	defer teardown(testServer)
+
+	server.items = map[Code]Item{
+		Code("VOUCHER"): Item{
+			Code:  Code("VOURHCER"),
+			Name:  "a voucher",
+			Price: 250,
+		},
+		Code("LONGCLAW"): Item{
+			Code:  Code("LONGCLAW"),
+			Name:  "longclaw",
+			Price: 1000000,
+		},
+	}
+
+	resp, err := testServer.Client().Get(testServer.URL + "/items")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bs := readBody(t, resp)
+	json := string(bs)
+
+	assert.Equal(t, json, ""+
+		"{"+
+		`"data":[`+
+		`{"code":"VOURHCER","name":"a voucher","price":2.5},`+
+		`{"code":"LONGCLAW","name":"longclaw","price":10000}`+
+		"]"+
+		"}")
+}
+
 func createBasket(t *testing.T, testServer *httptest.Server) map[string]interface{} {
 	resp, err := testServer.Client().Post(testServer.URL+"/baskets", "application/json", nil)
 	if err != nil {

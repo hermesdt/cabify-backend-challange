@@ -37,11 +37,16 @@ func AddItemEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		item, ok := s.items[Code(code)]
+		if !ok {
+			handleError(&UnkownItemError{}, w)
+			return
+		}
 		getTotalChan := make(chan Total)
 		errorChan := make(chan error)
 
 		worker.AddItem <- AddItemAction{
-			Code:         Code(code),
+			Item:         item,
 			GetTotalChan: getTotalChan,
 			ErrorChan:    errorChan,
 		}
@@ -68,6 +73,19 @@ func CloseBasketEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 		delete(s.workers, worker.GetId())
 
 		writeJson(w, map[string]interface{}{"total": total}, http.StatusOK)
+	}
+}
+
+func GetItemsEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jsonItems := []map[string]interface{}{}
+		for _, item := range s.items {
+			jsonItems = append(jsonItems, item.asJson())
+		}
+		data := map[string]interface{}{
+			"data": jsonItems,
+		}
+		writeJson(w, data, 200)
 	}
 }
 

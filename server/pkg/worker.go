@@ -1,7 +1,7 @@
 package server
 
 type AddItemAction struct {
-	Code         Code
+	Item         Item
 	GetTotalChan chan<- Total
 	ErrorChan    chan<- error
 }
@@ -38,14 +38,7 @@ func (w *Worker) Run() {
 	for {
 		select {
 		case addItemAction := <-w.AddItem:
-			code := addItemAction.Code
-			item, ok := Items[code]
-			if !ok {
-				addItemAction.ErrorChan <- &UnkownItemError{}
-				continue
-			}
-
-			w.Basket.AddItem(item)
+			w.Basket.AddItem(addItemAction.Item)
 			addItemAction.GetTotalChan <- w.Basket.GetTotal()
 
 		case closeAction := <-w.Close:

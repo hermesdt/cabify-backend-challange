@@ -13,6 +13,7 @@ import (
 type Server struct {
 	workers map[string]*Worker
 	router  *chi.Mux
+	items   map[Code]Item
 }
 
 func NewServer() *Server {
@@ -20,6 +21,7 @@ func NewServer() *Server {
 	s := &Server{
 		workers: make(map[string]*Worker),
 		router:  router,
+		items:   DefaultItems,
 	}
 
 	router.Use(middleware.RequestID)
@@ -35,6 +37,10 @@ func NewServer() *Server {
 			r.Put("/", CloseBasketEndpoint(s))
 			r.Put("/items", AddItemEndpoint(s))
 		})
+	})
+
+	router.Route("/items", func(r chi.Router) {
+		r.Get("/", GetItemsEndpoint(s))
 	})
 
 	return s
