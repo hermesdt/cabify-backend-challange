@@ -56,7 +56,7 @@ module UI
 
       basket_str = @basket.items.
         group_by { |item| item.code }.
-        map { |code, items| "\t- #{items[0].name} (#{items[0].price}) x #{items.size}" }.
+        map { |code, items| "\t- #{items[0].name} (#{items[0].price}€) x #{items.size}" }.
         join("\n")
 
 
