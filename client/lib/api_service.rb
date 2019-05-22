@@ -19,13 +19,19 @@ class ApiService
     request(:put, "/baskets/#{basket_id}", {})["total"]
   end
 
+  def get_items
+    request(:get, "/items")["items"]
+  end
+
   private
 
-  def request(method, path, payload)
+  def request(method, path, payload=nil)
     uri = URI.parse(BASE_URL + path)
     http = Net::HTTP.new(uri.host, uri.port)
 
     case method
+    when :get then
+      request = Net::HTTP::Get.new(uri.request_uri)
     when :post then
       request = Net::HTTP::Post.new(uri.request_uri)
       request.body = JSON.dump(payload)
