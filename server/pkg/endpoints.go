@@ -83,7 +83,7 @@ func GetItemsEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 			jsonItems = append(jsonItems, item.asJson())
 		}
 		data := map[string]interface{}{
-			"data": jsonItems,
+			"items": jsonItems,
 		}
 		writeJson(w, data, 200)
 	}
