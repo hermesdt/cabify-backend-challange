@@ -1,14 +1,13 @@
 module UI
   class Console
-    def initialize(basket_id = nil, api_service = ApiService.instance)
+    def initialize(api_service = ApiService.instance)
       @api_service = api_service
-      @basket_id = basket_id
-      @total = nil
+      @basket = nil
     end
 
     def run
-      if @basket_id.nil?
-        @basket_id = @api_service.create_basket
+      if @basket.nil?
+        @basket = @api_service.create_basket
       end
 
       done = false
@@ -41,33 +40,43 @@ module UI
       end
 
       if action_idx < get_items.size
-        @total = @api_service.add_item(@basket_id, get_items[action_idx]["code"])
+        @basket = @api_service.add_item(@basket.id, get_items[action_idx]["code"])
       end
 
       if action_idx == get_items.size
-        @api_service.close_basket(@basket_id)
+        @basket = @api_service.close_basket(@basket.id)
         return :quit
       end
     end
 
     def print_message
       items_str = get_items.each_with_index.map do |item, idx|
-        "\t#{idx}: #{item["name"]}"
+        "\t#{idx}: #{item.name} (#{item.price}€)"
       end.join("\n")
+
+      basket_str = @basket.items.
+        group_by { |item| item.code }.
+        map { |code, items| "\t- #{items[0].name} (#{items[0].price}) x #{items.size}" }.
+        join("\n")
+
 
       message = <<-MESSAGE
 
-Welcome! Your basket id is #{@basket_id}
+Welcome! Your basket id is #{@basket.id}
 * Add Item:
 #{items_str}
-#{get_items.size}: Close basket\n
+#{get_items.size}: Close basket
+
+Basket:
+#{basket_str}
+Total: #{@basket.total}
 MESSAGE
 
       puts message
     end
 
     def get_items
-      @items ||= @api_service.get_items
+      @items ||= @api_service.get_items.map { |item| Item.from_json(item) }
     end
   end
 end

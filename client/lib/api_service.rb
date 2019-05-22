@@ -8,19 +8,22 @@ class ApiService
   BASE_URL = "http://localhost:3000".freeze
 
   def create_basket
-    request(:post, "/baskets", {})["id"]
+    data = request(:post, "/baskets", {})
+    Basket.new(data["id"], data["items"], data["total"])
   end
 
   def add_item(basket_id, code)
-    request(:put, "/baskets/#{basket_id}/items", {"code" => code})["total"]
+    data = request(:put, "/baskets/#{basket_id}/items", {"code" => code})
+    Basket.new(data["id"], data["items"], data["total"])
   end
 
   def close_basket(basket_id)
-    request(:put, "/baskets/#{basket_id}", {})["total"]
+    data = request(:put, "/baskets/#{basket_id}", {})
+    Basket.new(data["id"], data["items"], data["total"])
   end
 
   def get_items
-    request(:get, "/items")["items"]
+    request(:get, "/items")
   end
 
   private
