@@ -12,7 +12,12 @@ func CreateBasket(s *Server) func(http.ResponseWriter, *http.Request) {
 		s.workers[worker.GetId()] = worker
 		worker.Start()
 
-		writeJson(w, map[string]interface{}{"id": worker.GetId()}, http.StatusCreated)
+		bs, err := worker.Basket.MarshalJSON()
+		if handleError(err, w) {
+			return
+		}
+
+		writeJson(w, bs, http.StatusCreated)
 	}
 }
 
@@ -42,18 +47,22 @@ func AddItemEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 			handleError(&UnkownItemError{}, w)
 			return
 		}
-		getTotalChan := make(chan Total)
+		getBasket := make(chan Basket)
 		errorChan := make(chan error)
 
 		worker.AddItem <- AddItemAction{
-			Item:         item,
-			GetTotalChan: getTotalChan,
-			ErrorChan:    errorChan,
+			Item:      item,
+			GetBasket: getBasket,
+			ErrorChan: errorChan,
 		}
 
 		select {
-		case total := <-getTotalChan:
-			writeJson(w, map[string]interface{}{"total": total}, http.StatusOK)
+		case basket := <-getBasket:
+			bs, err := basket.MarshalJSON()
+			if handleError(err, w) {
+				return
+			}
+			writeJson(w, bs, http.StatusOK)
 		case err := <-errorChan:
 			handleError(err, w)
 		}
@@ -64,39 +73,42 @@ func CloseBasketEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		worker := r.Context().Value("worker").(*Worker)
 
-		getTotalChan := make(chan Total)
+		getBasket := make(chan Basket)
 
 		worker.Close <- CloseAction{
-			GetTotalChan: getTotalChan,
+			GetBasket: getBasket,
 		}
-		total := <-getTotalChan
+		basket := <-getBasket
 		delete(s.workers, worker.GetId())
 
-		writeJson(w, map[string]interface{}{"total": total}, http.StatusOK)
+		bs, err := basket.MarshalJSON()
+		if handleError(err, w) {
+			return
+		}
+
+		writeJson(w, bs, http.StatusOK)
 	}
 }
 
 func GetItemsEndpoint(s *Server) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		jsonItems := []map[string]interface{}{}
+		var items []Item
 		for _, item := range s.items {
-			jsonItems = append(jsonItems, item.asJson())
+			items = append(items, item)
 		}
-		data := map[string]interface{}{
-			"items": jsonItems,
+
+		bs, err := json.Marshal(items)
+		if handleError(err, w) {
+			return
 		}
-		writeJson(w, data, 200)
+
+		writeJson(w, bs, 200)
 	}
 }
 
-func writeJson(w http.ResponseWriter, data map[string]interface{}, status int) {
+func writeJson(w http.ResponseWriter, data []byte, status int) {
 	w.WriteHeader(status)
 	w.Header().Add("content-type", "application/json")
 
-	bs, err := json.Marshal(data)
-	if handleError(err, w) {
-		return
-	}
-
-	w.Write(bs)
+	w.Write(data)
 }

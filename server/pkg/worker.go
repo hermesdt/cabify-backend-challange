@@ -1,13 +1,13 @@
 package server
 
 type AddItemAction struct {
-	Item         Item
-	GetTotalChan chan<- Total
-	ErrorChan    chan<- error
+	Item      Item
+	GetBasket chan<- Basket
+	ErrorChan chan<- error
 }
 
 type CloseAction struct {
-	GetTotalChan chan<- Total
+	GetBasket chan<- Basket
 }
 
 type Worker struct {
@@ -39,10 +39,10 @@ func (w *Worker) Run() {
 		select {
 		case addItemAction := <-w.AddItem:
 			w.Basket.AddItem(addItemAction.Item)
-			addItemAction.GetTotalChan <- w.Basket.GetTotal()
+			addItemAction.GetBasket <- *w.Basket
 
 		case closeAction := <-w.Close:
-			closeAction.GetTotalChan <- w.Basket.GetTotal()
+			closeAction.GetBasket <- *w.Basket
 			return
 		}
 	}

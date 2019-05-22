@@ -3,9 +3,9 @@ package server
 type Code string
 
 type Item struct {
-	Code  Code
-	Name  string
-	Price int
+	Code  Code   `json:"code"`
+	Name  string `json:"name"`
+	Price int    `json:"price"`
 }
 
 const (
@@ -32,12 +32,4 @@ var DefaultItems = map[Code]Item{
 		Name:  "Cabify Coffee Mug",
 		Price: 750,
 	},
-}
-
-func (i *Item) asJson() map[string]interface{} {
-	return map[string]interface{}{
-		"code":  i.Code,
-		"name":  i.Name,
-		"price": float64(i.Price) / 100,
-	}
 }

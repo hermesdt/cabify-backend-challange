@@ -62,7 +62,7 @@ func TestAddItemHavingBasket(t *testing.T) {
 	if err := json.Unmarshal(readBody(t, resp), &message); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 40.0, message["total"].(float64))
+	assert.Equal(t, 4000.0, message["total"])
 }
 
 func TestCloseBasket(t *testing.T) {
@@ -109,12 +109,10 @@ func TestGetItems(t *testing.T) {
 	json := string(bs)
 
 	assert.Equal(t, json, ""+
-		"{"+
-		`"data":[`+
-		`{"code":"VOURHCER","name":"a voucher","price":2.5},`+
-		`{"code":"LONGCLAW","name":"longclaw","price":10000}`+
-		"]"+
-		"}")
+		"["+
+		`{"code":"VOURHCER","name":"a voucher","price":250},`+
+		`{"code":"LONGCLAW","name":"longclaw","price":1000000}`+
+		"]")
 }
 
 func createBasket(t *testing.T, testServer *httptest.Server) map[string]interface{} {

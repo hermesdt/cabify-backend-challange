@@ -1,20 +1,20 @@
 package server
 
 import (
+	"encoding/json"
+
 	uuid "github.com/satori/go.uuid"
 )
 
-type Total float64
-
 type Basket struct {
-	UUID  *uuid.UUID
-	Items []Item
+	UUID  uuid.UUID `json:"basket_id"`
+	Items []Item    `json:"items"`
 }
 
 func NewBasket() *Basket {
 	uuid := uuid.NewV4()
 	return &Basket{
-		UUID: &uuid,
+		UUID: uuid,
 	}
 }
 
@@ -22,10 +22,22 @@ func (b *Basket) AddItem(item Item) {
 	b.Items = append(b.Items, item)
 }
 
-func (b *Basket) GetTotal() Total {
+func (b *Basket) GetTotal() int {
 	total := 0
 	for _, item := range b.Items {
 		total += item.Price
 	}
-	return Total(float64(total) / 100)
+	return total
+}
+
+func (b *Basket) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		UUID  uuid.UUID `json:"id"`
+		Items []Item    `json:"items"`
+		Total int       `json:"total"`
+	}{
+		b.UUID,
+		b.Items,
+		b.GetTotal(),
+	})
 }

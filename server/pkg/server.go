@@ -46,9 +46,9 @@ func NewServer() *Server {
 	return s
 }
 
-func (s *Server) Start() {
+func (s *Server) Start() error {
 	log.Println("Starting server on port 3000")
-	http.ListenAndServe(":3000", s.router)
+	return http.ListenAndServe(":3000", s.router)
 }
 
 func workerCtx(s *Server) func(http.Handler) http.Handler {
