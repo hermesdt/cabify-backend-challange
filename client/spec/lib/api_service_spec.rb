@@ -16,7 +16,7 @@ RSpec.describe ApiService do
       FakeServer.stub_endpoint(path: '/baskets', status: 201, body: body)
 
       id = subject.create_basket
-      expect(id).to eq(basket_id)
+      expect(id).to eq(Basket.new("asdf"))
     end
   end
 
@@ -32,8 +32,8 @@ RSpec.describe ApiService do
         status: 200,
         body: body)
 
-      basket_total = subject.add_item(basket_id, code)
-      expect(basket_total).to eq(total)
+      basket = subject.add_item(basket_id, code)
+      expect(basket).to eq(Basket.new(nil, nil, 40.5))
     end
   end
 
@@ -48,16 +48,16 @@ RSpec.describe ApiService do
         status: 200,
         body: body)
 
-      basket_total = subject.close_basket(basket_id)
-      expect(basket_total).to eq(total)
+      basket = subject.close_basket(basket_id)
+      expect(basket).to eq(Basket.new(nil, nil, 20))
     end
   end
 
   describe "#get_items" do
     it "returns the list of items" do
-      body = JSON.dump({"items" => [
+      body = JSON.dump([
         {"code" => "VOUCHER", "name" => "voucher", "price" => 1.00}
-      ]})
+      ])
       FakeServer.stub_endpoint(
         path: "/items",
         status: 200,

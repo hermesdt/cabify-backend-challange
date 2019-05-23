@@ -5,7 +5,9 @@ require 'net/http'
 class ApiService
   include Singleton
 
-  BASE_URL = "http://localhost:3000".freeze
+  FlexibleConfig.use :api_service do |config|
+    BASE_URL = config.fetch(:base_url, 'http://localhost:3000').freeze
+  end
 
   def create_basket
     data = request(:post, "/baskets", {})
