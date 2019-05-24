@@ -14,8 +14,11 @@ module UI
       while !done
         print_message
         key = read_key
-        if execute_key(key) == :quit
+        case execute_key(key)
+        when :quit then
           done = true
+        when :unknown then
+          puts "Incorrect option"
         end
       end
     end
@@ -36,7 +39,7 @@ module UI
     def execute_key(key)
       action_idx = key.to_i
       if action_idx < 0
-        return
+        return :unknown
       end
 
       if action_idx < get_items.size
@@ -47,6 +50,8 @@ module UI
         @basket = @api_service.close_basket(@basket.id)
         return :quit
       end
+
+      return :unknown
     end
 
     def print_message
@@ -58,6 +63,10 @@ module UI
         group_by { |item| item.code }.
         map { |code, items| "\t- #{items[0].name} (#{items[0].price}€) x #{items.size}" }.
         join("\n")
+      
+      promotions_str = @basket.promotions&.map do |promo|
+        "\t- #{promo.name}. Earned #{promo.total_discount}€"
+      end.join("\n")
 
 
       message = <<-MESSAGE
@@ -69,7 +78,9 @@ Welcome! Your basket id is #{@basket.id}
 
 Basket:
 #{basket_str}
-Total: #{@basket.total}
+Promos:
+#{promotions_str}
+Total: #{@basket.total}€
 MESSAGE
 
       puts message

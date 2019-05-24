@@ -39,12 +39,14 @@ func (b *Basket) GetTotal() int {
 
 func (b *Basket) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		UUID  uuid.UUID `json:"id"`
-		Items []Item    `json:"items"`
-		Total int       `json:"total"`
+		UUID       uuid.UUID   `json:"id"`
+		Items      []Item      `json:"items"`
+		Promotions []Promotion `json:"promotions"`
+		Total      int         `json:"total"`
 	}{
 		b.UUID,
 		b.Items,
+		b.Promotions,
 		b.GetTotal(),
 	})
 }

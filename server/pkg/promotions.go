@@ -24,7 +24,7 @@ func buy2pay1VoucherPromo(b *Basket) *Promotion {
 			vouchersCount++
 		}
 	}
-	if vouchersCount == 0 {
+	if vouchersCount < 2 {
 		return nil
 	}
 

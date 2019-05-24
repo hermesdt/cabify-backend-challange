@@ -11,17 +11,17 @@ class ApiService
 
   def create_basket
     data = request(:post, "/baskets", {})
-    Basket.new(data["id"], data["items"], data["total"])
+    Basket.new(data["id"], data["items"], data["promotions"], data["total"])
   end
 
   def add_item(basket_id, code)
     data = request(:put, "/baskets/#{basket_id}/items", {"code" => code})
-    Basket.new(data["id"], data["items"], data["total"])
+    Basket.new(data["id"], data["items"], data["promotions"], data["total"])
   end
 
   def close_basket(basket_id)
     data = request(:put, "/baskets/#{basket_id}", {})
-    Basket.new(data["id"], data["items"], data["total"])
+    Basket.new(data["id"], data["items"], data["promotions"], data["total"])
   end
 
   def get_items

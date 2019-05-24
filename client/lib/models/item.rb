@@ -1,3 +1,5 @@
+require 'ostruct'
+
 class Item < Struct.new(:code, :name, :price)
 
   class << self
@@ -7,6 +9,6 @@ class Item < Struct.new(:code, :name, :price)
   end
 
   def price
-    super.yield_self { |price| Integer(price)/100.0 }
+    @price ||= Money.number_to_money(super)
   end
 end
