@@ -7,8 +7,9 @@ import (
 )
 
 type Basket struct {
-	UUID  uuid.UUID `json:"basket_id"`
-	Items []Item    `json:"items"`
+	UUID       uuid.UUID   `json:"basket_id"`
+	Items      []Item      `json:"items"`
+	Promotions []Promotion `json:"promotions"`
 }
 
 func NewBasket() *Basket {
@@ -27,6 +28,12 @@ func (b *Basket) GetTotal() int {
 	for _, item := range b.Items {
 		total += item.Price
 	}
+
+	b.Promotions = calculatePromos(b)
+	for _, promo := range b.Promotions {
+		total -= promo.TotalDiscount
+	}
+
 	return total
 }
 

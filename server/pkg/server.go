@@ -21,7 +21,7 @@ func NewServer() *Server {
 	s := &Server{
 		workers: make(map[string]*Worker),
 		router:  router,
-		items:   DefaultItems,
+		items:   ITEMS,
 	}
 
 	router.Use(middleware.RequestID)

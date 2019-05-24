@@ -11,10 +11,10 @@ type Item struct {
 const (
 	VOUCHER_CODE = Code("VOUCHER")
 	TSHIRT_CODE  = Code("TSHIRT")
-	MUG          = Code("MUG")
+	MUG_CODE     = Code("MUG")
 )
 
-var DefaultItems = map[Code]Item{
+var ITEMS = map[Code]Item{
 	VOUCHER_CODE: Item{
 		Code:  VOUCHER_CODE,
 		Name:  "Cabify Voucher",
@@ -27,8 +27,8 @@ var DefaultItems = map[Code]Item{
 		Price: 2000,
 	},
 
-	MUG: Item{
-		Code:  MUG,
+	MUG_CODE: Item{
+		Code:  MUG_CODE,
 		Name:  "Cabify Coffee Mug",
 		Price: 750,
 	},
