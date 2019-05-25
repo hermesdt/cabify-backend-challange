@@ -12,13 +12,18 @@ module UI
 
       done = false
       while !done
-        print_message
-        key = read_key
-        case execute_key(key)
-        when :quit then
-          done = true
-        when :unknown then
-          puts "Incorrect option"
+        begin
+          print_message
+          key = read_key
+          case execute_key(key)
+          when :quit then
+            done = true
+          when :unknown then
+            puts "Incorrect option"
+          end
+        rescue StandardError => e
+          puts "Received exception #{e.to_s}"
+          puts e.backtrace.join("\n")
         end
       end
     end
@@ -47,7 +52,7 @@ module UI
       end
 
       if action_idx == get_items.size
-        @basket = @api_service.close_basket(@basket.id)
+        @api_service.close_basket(@basket.id)
         return :quit
       end
 

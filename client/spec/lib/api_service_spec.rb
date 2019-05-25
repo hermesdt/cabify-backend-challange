@@ -33,7 +33,7 @@ RSpec.describe ApiService do
         body: body)
 
       basket = subject.add_item(basket_id, code)
-      expect(basket).to eq(Basket.new(nil, nil, 40.5))
+      expect(basket).to eq(Basket.new(nil, nil, nil, 40.5))
     end
   end
 
@@ -48,8 +48,10 @@ RSpec.describe ApiService do
         status: 200,
         body: body)
 
-      basket = subject.close_basket(basket_id)
-      expect(basket).to eq(Basket.new(nil, nil, 20))
+      subject.close_basket(basket_id)
+      expect(FakeServer.last_request.body).to eq("{}")
+      expect(FakeServer.last_request.request_method).to eq("PUT")
+      expect(FakeServer.last_request.path).to eq("/baskets/asdf")
     end
   end
 

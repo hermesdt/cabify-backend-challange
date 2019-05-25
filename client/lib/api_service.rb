@@ -20,8 +20,7 @@ class ApiService
   end
 
   def close_basket(basket_id)
-    data = request(:put, "/baskets/#{basket_id}", {})
-    Basket.new(data["id"], data["items"], data["promotions"], data["total"])
+    request(:put, "/baskets/#{basket_id}", {})
   end
 
   def get_items
