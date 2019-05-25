@@ -1,4 +1,4 @@
-package server
+package model
 
 import (
 	"encoding/json"
@@ -7,15 +7,15 @@ import (
 )
 
 type Basket struct {
-	UUID       uuid.UUID   `json:"basket_id"`
+	ID         uuid.UUID   `json:"basket_id"`
 	Items      []Item      `json:"items"`
 	Promotions []Promotion `json:"promotions"`
 }
 
-func NewBasket() *Basket {
+func NewBasket() Basket {
 	uuid := uuid.NewV4()
-	return &Basket{
-		UUID: uuid,
+	return Basket{
+		ID: uuid,
 	}
 }
 
@@ -39,12 +39,12 @@ func (b *Basket) GetTotal() int {
 
 func (b *Basket) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		UUID       uuid.UUID   `json:"id"`
+		ID         uuid.UUID   `json:"id"`
 		Items      []Item      `json:"items"`
 		Promotions []Promotion `json:"promotions"`
 		Total      int         `json:"total"`
 	}{
-		b.UUID,
+		b.ID,
 		b.Items,
 		b.Promotions,
 		b.GetTotal(),

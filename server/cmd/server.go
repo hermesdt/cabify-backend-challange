@@ -2,13 +2,16 @@ package main
 
 import (
 	"log"
+	"net/http"
 
-	server "github.com/hermesdt/backend-challenge/pkg"
+	"github.com/hermesdt/backend-challenge/pkg/api"
+	"github.com/hermesdt/backend-challenge/pkg/app"
 )
 
 func main() {
-	s := server.NewServer()
-	if err := s.Start(); err != nil {
-		log.Fatal(err)
-	}
+	app := app.New()
+	api := api.New(app)
+
+	log.Println("Starting server on port 3000")
+	http.ListenAndServe(":3000", api.SetupRouter())
 }

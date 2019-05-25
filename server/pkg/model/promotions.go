@@ -1,4 +1,4 @@
-package server
+package model
 
 type Promotion struct {
 	Name          string `json:"name"`
