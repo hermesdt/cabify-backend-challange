@@ -1,42 +1,50 @@
 module UI
   class Console
-    def initialize(api_service = ApiService.instance)
+    def initialize(api_service: ApiService.instance, input: STDINT, output: STDOUT)
       @api_service = api_service
+      @output = output
+      @input = input
       @basket = nil
     end
 
-    def run
+    def start
       if @basket.nil?
         @basket = @api_service.create_basket
       end
 
       done = false
       while !done
-        begin
-          print_message
-          key = read_key
-          case execute_key(key)
-          when :quit then
-            done = true
-          when :unknown then
-            puts "Incorrect option"
-          end
-        rescue StandardError => e
-          puts "Received exception #{e.to_s}"
-          puts e.backtrace.join("\n")
-        end
+        done = run
       end
+    end
+
+    def run
+      begin
+        print_message
+        key = read_key
+        case execute_key(key)
+        when :quit then
+          return true
+        when :unknown then
+          @output.puts "Incorrect option"
+        end
+      rescue StandardError => e
+        @output.puts "Received exception #{e.to_s}"
+        @output.puts e.backtrace.join("\n")
+      end
+
+      false
     end
 
     private
 
     def read_key
       begin
-        print "Choose one option: "
-        k = STDIN.gets.chomp
+        @output.print "Choose one option: "
+        k = @input.gets.chomp
         Integer(k)
       rescue ArgumentError => e
-        puts "Incorrect option"
+        @output.puts "Incorrect option"
         retry
       end
     end
@@ -88,7 +96,7 @@ Promos:
 Total: #{@basket.total}€
 MESSAGE
 
-      puts message
+      @output.puts message
     end
 
     def get_items

@@ -14,8 +14,13 @@
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 
-require_relative '../lib/config/application'
+require 'simplecov'
+SimpleCov.start do
+  load_profile 'test_frameworks'
+  track_files 'lib/**/*.rb'
+end
 
+require_relative '../lib/config/application'
 
 support_files = [File.expand_path(File.dirname(__FILE__)), "support", "**", "*.rb"].join(File::SEPARATOR)
 Dir[support_files].each { |f| require f }
