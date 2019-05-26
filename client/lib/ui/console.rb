@@ -1,6 +1,6 @@
 module UI
   class Console
-    def initialize(api_service: ApiService.instance, input: STDINT, output: STDOUT)
+    def initialize(api_service: ApiService.instance, input: STDIN, output: STDOUT)
       @api_service = api_service
       @output = output
       @input = input
