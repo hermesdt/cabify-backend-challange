@@ -22,7 +22,10 @@ func (api *Api) CreateBasket(w http.ResponseWriter, r *http.Request) {
 func (api *Api) CloseBasket(w http.ResponseWriter, r *http.Request) {
 	basket := r.Context().Value("basket").(model.Basket)
 
-	api.App.DB.BasketsStore.Delete(basket.ID.String())
+	if handleError(api.App.DB.BasketsStore.Delete(basket.ID.String()), w) {
+		return
+	}
+
 	writeJSON(w, []byte("{}"), 200)
 }
 

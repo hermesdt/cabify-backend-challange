@@ -1,6 +1,8 @@
 package db
 
 import (
+	"sync"
+
 	"github.com/hermesdt/backend-challenge/pkg/model"
 )
 
@@ -8,42 +10,65 @@ type BasketsStore interface {
 	Create() model.Basket
 	Get(id string) (model.Basket, error)
 	Update(basket model.Basket) error
-	Delete(id string)
+	Delete(id string) error
+}
+
+type BasketRecord struct {
+	basket *model.Basket
+	locker sync.Locker
 }
 
 type BasketsMemStore struct {
-	Baskets map[string]model.Basket
+	records map[string]*BasketRecord
 }
 
 func NewBasketsMemStore() BasketsStore {
 	return &BasketsMemStore{
-		Baskets: make(map[string]model.Basket),
+		records: make(map[string]*BasketRecord),
 	}
 }
 
 func (s *BasketsMemStore) Create() model.Basket {
 	basket := model.NewBasket()
-	s.Baskets[basket.ID.String()] = basket
+	record := BasketRecord{
+		basket: &basket,
+		locker: &sync.Mutex{},
+	}
+
+	s.records[basket.ID.String()] = &record
 	return basket
 }
 
 func (s *BasketsMemStore) Get(id string) (model.Basket, error) {
-	b, ok := s.Baskets[id]
+	r, err := s.get(id)
+	if err != nil {
+		return model.Basket{}, err
+	}
+
+	return *r.basket, nil
+}
+
+func (s *BasketsMemStore) get(id string) (*BasketRecord, error) {
+	r, ok := s.records[id]
 	if !ok {
-		return model.Basket{}, &RecordNotFoundError{
+		return nil, &RecordNotFoundError{
 			Model: "Basket",
 			ID:    id,
 		}
 	}
-	return b, nil
+	return r, nil
 }
 
 func (s *BasketsMemStore) Update(basket model.Basket) error {
-	// TODO use a lock
-	b, err := s.Get(basket.ID.String())
+	r, err := s.get(basket.ID.String())
 	if err != nil {
 		return err
 	}
+
+	r.locker.Lock()
+	defer r.locker.Unlock()
+
+	b := r.basket
 
 	b.Items = make([]model.Item, 0, len(basket.Items))
 	b.Items = append(b.Items, basket.Items...)
@@ -51,10 +76,18 @@ func (s *BasketsMemStore) Update(basket model.Basket) error {
 	b.Promotions = make([]model.Promotion, 0, len(basket.Promotions))
 	b.Promotions = append(b.Promotions, basket.Promotions...)
 
-	s.Baskets[b.ID.String()] = b
 	return nil
 }
 
-func (s *BasketsMemStore) Delete(id string) {
-	delete(s.Baskets, id)
+func (s *BasketsMemStore) Delete(id string) error {
+	r, err := s.get(id)
+	if err != nil {
+		return err
+	}
+
+	r.locker.Lock()
+	defer r.locker.Unlock()
+
+	delete(s.records, id)
+	return nil
 }
